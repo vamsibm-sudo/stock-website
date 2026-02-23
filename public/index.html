@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock & Options Recommendations</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📈 Stock & Options Recommendations</h1>
+            <p>Real-time recommendations and tracking</p>
+        </header>
+
+        <div class="upload-section">
+            <h2>Upload Recommendations</h2>
+            <p class="hint">Upload your Excel file with stock and option recommendations</p>
+            <form id="uploadForm" enctype="multipart/form-data">
+                <input type="file" id="fileInput" accept=".xlsx,.xls" required>
+                <button type="submit" class="btn-upload">Upload Excel</button>
+            </form>
+            <div id="uploadMessage" class="message"></div>
+        </div>
+
+        <div class="filter-section">
+            <label for="typeFilter">Filter by Type:</label>
+            <select id="typeFilter">
+                <option value="">All</option>
+                <option value="Stock">Stocks</option>
+                <option value="Option">Options</option>
+            </select>
+
+            <label for="statusFilter">Filter by Status:</label>
+            <select id="statusFilter">
+                <option value="">All</option>
+                <option value="Open">Open</option>
+                <option value="Closed">Closed</option>
+            </select>
+        </div>
+
+        <div class="stocks-section">
+            <h2>Recommendations <span id="stockCount"></span></h2>
+            <div id="stocksContainer" class="stocks-grid">
+                <p class="loading">Loading recommendations...</p>
+            </div>
+        </div>
+
+        <footer>
+            <p>Stock & Options Recommendation Dashboard</p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
+
