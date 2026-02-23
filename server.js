@@ -31,11 +31,19 @@ if (!fs.existsSync('uploads')) {
 
 // Ensure stocks.json exists
 const STOCKS_FILE = path.join(__dirname, 'data', 'stocks.json');
+const STOCKS_TEMPLATE = path.join(__dirname, 'data', 'stocks.template.json');
+
 if (!fs.existsSync(path.join(__dirname, 'data'))) {
   fs.mkdirSync(path.join(__dirname, 'data'));
 }
+
 if (!fs.existsSync(STOCKS_FILE)) {
-  fs.writeFileSync(STOCKS_FILE, JSON.stringify([], null, 2));
+  // If template exists, use it; otherwise create empty array
+  if (fs.existsSync(STOCKS_TEMPLATE)) {
+    fs.copyFileSync(STOCKS_TEMPLATE, STOCKS_FILE);
+  } else {
+    fs.writeFileSync(STOCKS_FILE, JSON.stringify([], null, 2));
+  }
 }
 
 // Routes
@@ -242,7 +250,11 @@ app.get('/api/health', (req, res) => {
 
 // Start server
 app.listen(PORT, () => {
+  // Log initialization status
+  const stocksCount = JSON.parse(fs.readFileSync(STOCKS_FILE, 'utf8')).length;
   console.log(`\n✓ Server running on http://localhost:${PORT}`);
+  console.log(`✓ Loaded ${stocksCount} stocks from data storage`);
+  console.log(`✓ New stocks you add will be saved persistently`);
   console.log(`✓ Access from other computers using your machine's IP address`);
   console.log(`✓ You can find your IP with: ipconfig (Windows) or ifconfig (Mac/Linux)\n`);
 });

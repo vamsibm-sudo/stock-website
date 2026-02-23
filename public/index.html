@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock & Options Recommendations</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <div class="logo-section">
+                    <img id="siteLogo" src="images/logo.png" alt="Logo" class="site-logo">
+                </div>
+                <div class="header-text">
+                    <h1>📈 Stock & Options Recommendations</h1>
+                    <p>Real-time recommendations and tracking</p>
+                </div>
+            </div>
+        </header>
+
+        <div class="controls-section">
+            <div class="search-and-filters">
+                <input type="text" id="searchInput" placeholder="🔍 Search stocks by ticker or name..." class="search-input">
+                
+                <label for="typeFilter">Filter by Type:</label>
+                <select id="typeFilter">
+                    <option value="">All</option>
+                    <option value="Stock">Stocks</option>
+                    <option value="Option">Options</option>
+                </select>
+
+                <label for="statusFilter">Filter by Status:</label>
+                <select id="statusFilter">
+                    <option value="">All</option>
+                    <option value="Open">Open</option>
+                    <option value="Closed">Closed</option>
+                </select>
+
+                <label for="dateFilter">Filter by Date Added:</label>
+                <select id="dateFilter">
+                    <option value="">All Time</option>
+                    <option value="24h">Last 24 Hours</option>
+                    <option value="7d">Last 7 Days</option>
+                    <option value="30d">Last 1 Month</option>
+                    <option value="6m">Last 6 Months</option>
+                    <option value="1y">Last 1 Year</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Add Stock Modal -->
+        <div id="addStockModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Add New Stock Recommendation</h2>
+                    <button id="closeModalBtn" class="modal-close" aria-label="Close">&times;</button>
+                </div>
+                <form id="addStockForm" class="add-stock-form">
+                    <div class="form-group">
+                        <label for="accessCode">Access Code *</label>
+                        <input type="password" id="accessCode" required placeholder="Enter access code">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="recommenderName">Your Name *</label>
+                        <input type="text" id="recommenderName" required placeholder="e.g., John Smith">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="stockTicker">Stock Ticker *</label>
+                        <input type="text" id="stockTicker" required placeholder="e.g., AAPL, GOOGL">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="stockType">Type *</label>
+                        <select id="stockType" required>
+                            <option value="Stock">Stock</option>
+                            <option value="Option">Option</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="stockCurrentPrice">Current Price (auto-fetch from Yahoo Finance)</label>
+                        <input type="number" id="stockCurrentPrice" placeholder="e.g., 150.50" step="0.01">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="stockEntry">Entry Price</label>
+                        <input type="number" id="stockEntry" placeholder="e.g., 140.00" step="0.01">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="stockTarget">Price Target</label>
+                        <input type="number" id="stockTarget" placeholder="e.g., 180.00" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label for="stockStatus">Status</label>
+                        <select id="stockStatus">
+                            <option value="Open">Open</option>
+                            <option value="Closed">Closed</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="stockNotes">Notes</label>
+                        <textarea id="stockNotes" placeholder="Why are you recommending this?"></textarea>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="submit" class="btn-add-stock">➕ Add Stock</button>
+                        <button type="button" id="cancelBtn" class="btn-cancel">Cancel</button>
+                    </div>
+                    <div id="addStockMessage" class="message"></div>
+                </form>
+            </div>
+        </div>
+
+        <div class="stocks-section">
+            <div class="stocks-header">
+                <div class="stocks-header-title">
+                    <h2>Recommendations <span id="stockCount"></span></h2>
+                </div>
+                <button id="openAddStockBtn" class="btn-add-stock-top">➕ Add New Stock</button>
+            </div>
+            <div id="tableWrapper" class="table-wrapper">
+                <table id="stocksTable" class="stocks-table">
+                    <thead>
+                        <tr>
+                            <th class="sortable" data-sort="addedDate">📅 Added <span class="sort-indicator">↕</span></th>
+                            <th class="sortable" data-sort="ticker">Ticker <span class="sort-indicator">↕</span></th>
+                            <th class="sortable" data-sort="type">Type <span class="sort-indicator">↕</span></th>
+                            <th class="sortable" data-sort="status">Status <span class="sort-indicator">↕</span></th>
+                            <th class="sortable" data-sort="currentPrice">Current Price <span class="sort-indicator">↕</span></th>
+                            <th class="sortable" data-sort="entry">Entry <span class="sort-indicator">↕</span></th>
+                            <th class="sortable" data-sort="priceTarget">Target <span class="sort-indicator">↕</span></th>
+                            <th class="sortable" data-sort="returnPercent">Return % <span class="sort-indicator">↕</span></th>
+                            <th>Recommended By</th>
+                            <th>Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody id="stocksTableBody">
+                        <tr><td colspan="10" class="loading">Loading recommendations...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <footer>
+            <p>Stock & Options Recommendation Dashboard</p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
+
