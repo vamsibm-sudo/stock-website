@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock & Options Recommendations</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📈 Stock & Options Recommendations</h1>
+            <p>Real-time recommendations and tracking</p>
+        </header>
+
+        <div class="add-stock-section">
+            <input type="text" id="searchInput" placeholder="🔍 Search stocks by ticker or name..." class="search-input">
+            
+            <label for="typeFilter">Filter by Type:</label>
+            <select id="typeFilter">
+                <option value="">All</option>
+                <option value="Stock">Stocks</option>
+                <option value="Option">Options</option>
+            </select>
+
+            <label for="statusFilter">Filter by Status:</label>
+            <select id="statusFilter">
+                <option value="">All</option>
+                <option value="Open">Open</option>
+                <option value="Closed">Closed</option>
+            </select>
+
+            <label for="dateFilter">Filter by Date Added:</label>
+            <select id="dateFilter">
+                <option value="">All Time</option>
+                <option value="24h">Last 24 Hours</option>
+                <option value="7d">Last 7 Days</option>
+                <option value="30d">Last 1 Month</option>
+                <option value="6m">Last 6 Months</option>
+                <option value="1y">Last 1 Year</option>
+            </select>
+        </div>
+
+        <div class="add-stock-section">
+            <h2>Add New Stock</h2>
+            <form id="addStockForm" class="add-stock-form">
+                <div class="form-group">
+                    <label for="accessCode">Access Code *</label>
+                    <input type="password" id="accessCode" required placeholder="Enter access code">
+                </div>
+                <div class="form-group">
+                    <label for="recommenderName">Your Name *</label>
+                    <input type="text" id="recommenderName" required placeholder="e.g., John Smith">
+                </div>
+                <div class="form-group">
+                    <label for="stockTicker">Ticker *</label>
+                    <input type="text" id="stockTicker" required placeholder="e.g., AAPL">
+                </div>
+                <div class="form-group">
+                    <label for="stockType">Type</label>
+                    <select id="stockType">
+                        <option value="Stock">Stock</option>
+                        <option value="Option">Option</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="stockCurrentPrice">Current Price</label>
+                    <input type="number" id="stockCurrentPrice" placeholder="e.g., 150.25" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label for="stockEntry">Entry Price</label>
+                    <input type="number" id="stockEntry" placeholder="e.g., 145.00" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label for="stockTarget">Price Target</label>
+                    <input type="number" id="stockTarget" placeholder="e.g., 180.00" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label for="stockStatus">Status</label>
+                    <select id="stockStatus">
+                        <option value="Open">Open</option>
+                        <option value="Closed">Closed</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="stockNotes">Notes</label>
+                    <textarea id="stockNotes" placeholder="Why are you recommending this?"></textarea>
+                </div>
+                <button type="submit" class="btn-add-stock">➕ Add Stock</button>
+            </form>
+            <div id="addStockMessage" class="message"></div>
+        </div>
+
+        <div class="stocks-section">
+            <h2>Recommendations <span id="stockCount"></span></h2>
+            <div id="stocksContainer" class="stocks-grid">
+                <p class="loading">Loading recommendations...</p>
+            </div>
+        </div>
+
+        <footer>
+            <p>Stock & Options Recommendation Dashboard</p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
+
