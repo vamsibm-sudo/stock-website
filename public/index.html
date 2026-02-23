@@ -11,7 +11,7 @@
         <header>
             <div class="header-content">
                 <div class="logo-section">
-                    <img id="siteLogo" src="images/logo.png" alt="Logo" class="site-logo">
+                    <img id="siteLogo" src="images/logo.png" alt="Logo" class="site-logo" onerror="this.style.display='none'">
                 </div>
                 <div class="header-text">
                     <h1>📈 Stock & Options Recommendations</h1>
@@ -57,7 +57,15 @@
                     <h2>Add New Stock Recommendation</h2>
                     <button id="closeModalBtn" class="modal-close" aria-label="Close">&times;</button>
                 </div>
-                <form id="addStockForm" class="add-stock-form">
+                
+                <!-- Tab buttons for switching between add single stock and upload -->
+                <div class="modal-tabs">
+                    <button class="tab-btn active" data-tab="single">Add Single Stock</button>
+                    <button class="tab-btn" data-tab="upload">Upload File</button>
+                </div>
+
+                <!-- Single Stock Form -->
+                <form id="addStockForm" class="add-stock-form tab-content" data-tab="single">
                     <div class="form-group">
                         <label for="accessCode">Access Code *</label>
                         <input type="password" id="accessCode" required placeholder="Enter access code">
@@ -111,6 +119,27 @@
                         <button type="button" id="cancelBtn" class="btn-cancel">Cancel</button>
                     </div>
                     <div id="addStockMessage" class="message"></div>
+                </form>
+
+                <!-- Upload File Form -->
+                <form id="uploadStockForm" class="upload-stock-form tab-content" data-tab="upload" style="display: none;">
+                    <div class="form-group">
+                        <label for="uploadAccessCode">Access Code *</label>
+                        <input type="password" id="uploadAccessCode" required placeholder="Enter access code">
+                    </div>
+                    
+                    <div class="form-group upload-box">
+                        <label for="stockFile">Select Excel/CSV File *</label>
+                        <input type="file" id="stockFile" required accept=".xlsx,.xls,.csv" placeholder="Choose file">
+                        <p class="file-help">Supports: Excel (.xlsx, .xls) or CSV files</p>
+                        <p class="file-help">Required columns: Ticker/Symbol, Type, Status, Current Price, Entry, Target</p>
+                    </div>
+
+                    <div class="modal-actions">
+                        <button type="submit" class="btn-add-stock">📤 Upload Stocks</button>
+                        <button type="button" id="cancelUploadBtn" class="btn-cancel">Cancel</button>
+                    </div>
+                    <div id="uploadMessage" class="message"></div>
                 </form>
             </div>
         </div>

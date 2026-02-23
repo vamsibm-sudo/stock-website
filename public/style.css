@@ -742,6 +742,102 @@ footer {
     border: 1px solid #f5c6cb;
 }
 
+.message.info {
+    display: block;
+    background: #d1ecf1;
+    color: #0c5460;
+    border: 1px solid #bee5eb;
+}
+
+.message.warning {
+    display: block;
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+}
+
+/* Modal Tabs */
+.modal-tabs {
+    display: flex;
+    border-bottom: 2px solid #f0f0f0;
+    padding: 0 30px;
+    margin-top: 0;
+}
+
+.tab-btn {
+    flex: 1;
+    padding: 16px 20px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 0.95em;
+    font-weight: 600;
+    color: #999;
+    border-bottom: 3px solid transparent;
+    transition: all 0.3s;
+    margin-bottom: -2px;
+}
+
+.tab-btn:hover {
+    color: #666;
+}
+
+.tab-btn.active {
+    color: #667eea;
+    border-bottom-color: #667eea;
+}
+
+.tab-content {
+    padding: 30px;
+}
+
+.tab-content.add-stock-form {
+    padding: 30px;
+}
+
+.tab-content.upload-stock-form {
+    padding: 30px;
+}
+
+/* Upload File Styles */
+.upload-box {
+    position: relative;
+}
+
+.upload-box input[type="file"] {
+    display: block;
+    width: 100%;
+    padding: 10px 12px;
+    border: 2px dashed #667eea;
+    border-radius: 6px;
+    background: #f9f9f9;
+    cursor: pointer;
+    font-size: 0.95em;
+    transition: all 0.3s;
+}
+
+.upload-box input[type="file"]:hover {
+    background: #f0f0f0;
+    border-color: #5568d3;
+}
+
+.upload-box input[type="file"]:focus {
+    outline: none;
+    border-color: #667eea;
+    background: white;
+}
+
+.file-help {
+    font-size: 0.8em;
+    color: #666;
+    margin-top: 8px;
+    margin-bottom: 0;
+}
+
+.file-help:last-of-type {
+    margin-bottom: 8px;
+}
+
 @media (max-width: 768px) {
     header {
         padding: 15px;

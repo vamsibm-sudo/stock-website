@@ -20,6 +20,7 @@ function setupModalHandlers() {
   const openBtn = document.getElementById('openAddStockBtn');
   const closeBtn = document.getElementById('closeModalBtn');
   const cancelBtn = document.getElementById('cancelBtn');
+  const cancelUploadBtn = document.getElementById('cancelUploadBtn');
   
   openBtn.addEventListener('click', () => {
     modal.style.display = 'flex';
@@ -30,10 +31,21 @@ function setupModalHandlers() {
   const closeModal = () => {
     modal.style.display = 'none';
     document.body.style.overflow = 'auto';
+    // Reset forms and messages
+    document.getElementById('addStockForm').reset();
+    document.getElementById('uploadStockForm').reset();
+    document.getElementById('addStockMessage').textContent = '';
+    document.getElementById('uploadMessage').textContent = '';
+    // Reset to single stock tab
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelector('[data-tab="single"]').classList.add('active');
+    document.querySelectorAll('.tab-content').forEach(content => content.style.display = 'none');
+    document.getElementById('addStockForm').style.display = 'block';
   };
   
   closeBtn.addEventListener('click', closeModal);
   cancelBtn.addEventListener('click', closeModal);
+  cancelUploadBtn.addEventListener('click', closeModal);
   
   // Close modal when clicking outside the content
   modal.addEventListener('click', (e) => {
@@ -47,6 +59,28 @@ function setupModalHandlers() {
     if (e.key === 'Escape' && modal.style.display === 'flex') {
       closeModal();
     }
+  });
+
+  // Tab switching
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tabName = btn.dataset.tab;
+      
+      // Update active button
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      
+      // Update visible content
+      document.querySelectorAll('.tab-content').forEach(content => content.style.display = 'none');
+      document.getElementById(tabName === 'single' ? 'addStockForm' : 'uploadStockForm').style.display = 'block';
+      
+      // Focus first input
+      if (tabName === 'single') {
+        document.getElementById('accessCode').focus();
+      } else {
+        document.getElementById('uploadAccessCode').focus();
+      }
+    });
   });
 }
 
@@ -127,6 +161,62 @@ document.getElementById('addStockForm').addEventListener('submit', async (e) => 
         }
     } catch (error) {
         showMessage(`✗ Error: ${error.message}`, 'error', 'addStockMessage');
+    }
+});
+
+// Handle upload form
+document.getElementById('uploadStockForm').addEventListener('submit', async (e) => {
+    const modal = document.getElementById('addStockModal');
+    e.preventDefault();
+
+    const accessCode = document.getElementById('uploadAccessCode').value;
+    const CORRECT_CODE = '2275';
+
+    // Verify access code
+    if (accessCode !== CORRECT_CODE) {
+        showMessage('✗ Invalid access code. Please try again.', 'error', 'uploadMessage');
+        document.getElementById('uploadAccessCode').focus();
+        return;
+    }
+
+    const fileInput = document.getElementById('stockFile');
+    const file = fileInput.files[0];
+
+    if (!file) {
+        showMessage('✗ Please select a file to upload.', 'error', 'uploadMessage');
+        return;
+    }
+
+    // Show uploading state
+    showMessage('📤 Uploading and processing file...', 'info', 'uploadMessage');
+    
+    try {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch('/api/upload', {
+            method: 'POST',
+            body: formData
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            showMessage(`✓ Successfully uploaded ${data.total} stocks!`, 'success', 'uploadMessage');
+            document.getElementById('uploadStockForm').reset();
+            allStocks = data.stocks || [];
+            applyFilters();
+            
+            // Close modal after 2 seconds
+            setTimeout(() => {
+                modal.style.display = 'none';
+                document.body.style.overflow = 'auto';
+            }, 2000);
+        } else {
+            showMessage(`✗ Error: ${data.error}`, 'error', 'uploadMessage');
+        }
+    } catch (error) {
+        showMessage(`✗ Upload failed: ${error.message}`, 'error', 'uploadMessage');
     }
 });
 
