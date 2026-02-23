@@ -42,9 +42,11 @@ if (!fs.existsSync(STOCKS_FILE)) {
 // Get all stocks
 app.get('/api/stocks', (req, res) => {
   try {
-    const stocks = JSON.parse(fs.readFileSync(STOCKS_FILE, 'utf8'));
+    const fileContent = fs.readFileSync(STOCKS_FILE, 'utf8');
+    const stocks = JSON.parse(fileContent);
     res.json(stocks);
   } catch (error) {
+    console.error('Error loading stocks:', error.message);
     res.json([]);
   }
 });
