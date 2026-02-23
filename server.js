@@ -29,9 +29,9 @@ if (!fs.existsSync('uploads')) {
 }
 
 // Ensure stocks.json exists
-const STOCKS_FILE = 'data/stocks.json';
-if (!fs.existsSync('data')) {
-  fs.mkdirSync('data');
+const STOCKS_FILE = path.join(__dirname, 'data', 'stocks.json');
+if (!fs.existsSync(path.join(__dirname, 'data'))) {
+  fs.mkdirSync(path.join(__dirname, 'data'));
 }
 if (!fs.existsSync(STOCKS_FILE)) {
   fs.writeFileSync(STOCKS_FILE, JSON.stringify([], null, 2));
@@ -85,6 +85,7 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
           ticker: String(ticker).trim(),
           type: row.Type || row.type || 'Stock',
           alertDate: alertDate,
+          addedDate: new Date().toISOString(),
           currentPrice: row['Current Price'] || row['current price'] || '',
           entry: row['Entry (Alert)'] || row['Entry'] || row['entry'] || '',
           returnSinceEntry: row['% since Entry'] || row['% Change'] || '',
@@ -118,6 +119,53 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
   } catch (error) {
     console.error('Upload error:', error);
     res.status(500).json({ error: 'Error parsing file: ' + error.message });
+  }
+});
+
+// Add a new stock manually
+app.post('/api/add-stock', (req, res) => {
+  try {
+    const { ticker, type, currentPrice, entry, priceTarget, status, exitNotes } = req.body;
+
+    // Validate ticker
+    if (!ticker || ticker.trim() === '') {
+      return res.status(400).json({ error: 'Ticker is required' });
+    }
+
+    // Read existing stocks
+    const stocks = JSON.parse(fs.readFileSync(STOCKS_FILE, 'utf8'));
+
+    // Create new stock object
+    const newStock = {
+      sheet: 'Manual Entry',
+      ticker: String(ticker).trim().toUpperCase(),
+      type: type || 'Stock',
+      alertDate: new Date().toLocaleDateString(),
+      addedDate: new Date().toISOString(),
+      currentPrice: currentPrice || '',
+      entry: entry || '',
+      returnSinceEntry: '',
+      priceTarget: priceTarget || '',
+      exitNotes: exitNotes || '',
+      status: status || 'Open',
+      returnPercent: '',
+      suggestedBy: 'User'
+    };
+
+    // Add to stocks array
+    stocks.push(newStock);
+
+    // Save to file
+    fs.writeFileSync(STOCKS_FILE, JSON.stringify(stocks, null, 2));
+
+    res.json({ 
+      success: true, 
+      message: 'Stock added successfully',
+      stock: newStock
+    });
+  } catch (error) {
+    console.error('Add stock error:', error);
+    res.status(500).json({ error: 'Error adding stock: ' + error.message });
   }
 });
 
