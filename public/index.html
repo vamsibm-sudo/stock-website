@@ -47,6 +47,11 @@
                     <option value="6m">Last 6 Months</option>
                     <option value="1y">Last 1 Year</option>
                 </select>
+
+                <label for="userFilter">Filter by User:</label>
+                <select id="userFilter">
+                    <option value="">All Users</option>
+                </select>
             </div>
         </div>
 
@@ -144,6 +149,54 @@
             </div>
         </div>
 
+        <!-- Exit Value Modal -->
+        <div id="exitValueModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Record Exit Value</h2>
+                    <button id="closeExitModalBtn" class="modal-close" aria-label="Close">&times;</button>
+                </div>
+                <form id="exitValueForm" class="exit-value-form">
+                    <div class="form-group">
+                        <label for="exitStockTicker">Stock Ticker</label>
+                        <input type="text" id="exitStockTicker" readonly placeholder="Stock ticker">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="exitCurrentPrice">Current Price</label>
+                        <input type="number" id="exitCurrentPrice" readonly placeholder="Current price" step="0.01">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="exitEntryPrice">Entry Price</label>
+                        <input type="number" id="exitEntryPrice" readonly placeholder="Entry price" step="0.01">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="exitPrice">Exit Value *</label>
+                        <input type="number" id="exitPrice" required placeholder="Enter exit price" step="0.01">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="exitNotes">Exit Notes (Optional)</label>
+                        <textarea id="exitNotes" placeholder="Why did you exit this position?"></textarea>
+                    </div>
+
+                    <div style="background: #f9f9f9; padding: 12px; border-radius: 6px; margin-bottom: 16px;">
+                        <p style="font-size: 0.9em; color: #666; margin: 0;">
+                            <strong>Return Calculation:</strong> <span id="exitReturnPreview">Enter exit value to see return</span>
+                        </p>
+                    </div>
+
+                    <div class="modal-actions">
+                        <button type="submit" class="btn-add-stock">✓ Record Exit & Close Stock</button>
+                        <button type="button" id="cancelExitBtn" class="btn-cancel">Cancel</button>
+                    </div>
+                    <div id="exitMessage" class="message"></div>
+                </form>
+            </div>
+        </div>
+
         <div class="stocks-section">
             <div class="stocks-header">
                 <div class="stocks-header-title">
@@ -162,13 +215,15 @@
                             <th class="sortable" data-sort="currentPrice">Current Price <span class="sort-indicator">↕</span></th>
                             <th class="sortable" data-sort="entry">Entry <span class="sort-indicator">↕</span></th>
                             <th class="sortable" data-sort="priceTarget">Target <span class="sort-indicator">↕</span></th>
+                            <th class="sortable" data-sort="exitValue">Exit Value <span class="sort-indicator">↕</span></th>
                             <th class="sortable" data-sort="returnPercent">Return % <span class="sort-indicator">↕</span></th>
                             <th>Recommended By</th>
                             <th>Notes</th>
+                            <th>Action</th>
                         </tr>
                     </thead>
                     <tbody id="stocksTableBody">
-                        <tr><td colspan="10" class="loading">Loading recommendations...</td></tr>
+                        <tr><td colspan="12" class="loading">Loading recommendations...</td></tr>
                     </tbody>
                 </table>
             </div>

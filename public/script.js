@@ -82,6 +82,52 @@ function setupModalHandlers() {
       }
     });
   });
+
+  // Exit Value Modal handlers
+  const exitModal = document.getElementById('exitValueModal');
+  const closeExitBtn = document.getElementById('closeExitModalBtn');
+  const cancelExitBtn = document.getElementById('cancelExitBtn');
+
+  const closeExitModal = () => {
+    exitModal.style.display = 'none';
+    document.body.style.overflow = 'auto';
+    document.getElementById('exitValueForm').reset();
+    document.getElementById('exitMessage').textContent = '';
+    document.getElementById('exitReturnPreview').textContent = 'Enter exit value to see return';
+  };
+
+  closeExitBtn.addEventListener('click', closeExitModal);
+  cancelExitBtn.addEventListener('click', closeExitModal);
+
+  // Close exit modal on ESC
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && exitModal.style.display === 'flex') {
+      closeExitModal();
+    }
+  });
+
+  // Close on outside click
+  exitModal.addEventListener('click', (e) => {
+    if (e.target === exitModal) {
+      closeExitModal();
+    }
+  });
+
+  // Real-time return calculation preview
+  document.getElementById('exitPrice').addEventListener('input', () => {
+    const exitPrice = parseFloat(document.getElementById('exitPrice').value) || 0;
+    const entryPrice = parseFloat(document.getElementById('exitEntryPrice').value) || 0;
+    
+    if (entryPrice > 0 && exitPrice > 0) {
+      const returnPercent = (((exitPrice - entryPrice) / entryPrice) * 100).toFixed(2);
+      const returnClass = returnPercent >= 0 ? 'positive' : 'negative';
+      document.getElementById('exitReturnPreview').innerHTML = `
+        <span class="${returnClass}">
+          ${exitPrice > entryPrice ? '✓' : '✗'} From $${entryPrice.toFixed(2)} → $${exitPrice.toFixed(2)} = ${returnPercent}%
+        </span>
+      `;
+    }
+  });
 }
 
 function setupSortingHandlers() {
@@ -150,6 +196,7 @@ document.getElementById('addStockForm').addEventListener('submit', async (e) => 
             showMessage('✓ Stock added successfully!', 'success', 'addStockMessage');
             document.getElementById('addStockForm').reset();
             allStocks.push(newStock);
+            populateUserFilter();
             displayStocks(allStocks);
             // Close modal after 1.5 seconds
             setTimeout(() => {
@@ -205,6 +252,7 @@ document.getElementById('uploadStockForm').addEventListener('submit', async (e) 
             showMessage(`✓ Successfully uploaded ${data.total} stocks!`, 'success', 'uploadMessage');
             document.getElementById('uploadStockForm').reset();
             allStocks = data.stocks || [];
+            populateUserFilter();
             applyFilters();
             
             // Close modal after 2 seconds
@@ -220,17 +268,163 @@ document.getElementById('uploadStockForm').addEventListener('submit', async (e) 
     }
 });
 
+// Handle exit value form
+document.getElementById('exitValueForm').addEventListener('submit', async (e) => {
+    const exitModal = document.getElementById('exitValueModal');
+    e.preventDefault();
+
+    const ticker = document.getElementById('exitStockTicker').value;
+    const exitPrice = document.getElementById('exitPrice').value;
+    const exitNotes = document.getElementById('exitNotes').value;
+
+    if (!ticker || !exitPrice) {
+        showMessage('✗ Please enter exit value', 'error', 'exitMessage');
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/update-exit', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ ticker, exitValue: exitPrice, exitNotes })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            showMessage(`✓ Exit recorded! Return: ${data.returnPercent}%`, 'success', 'exitMessage');
+            
+            // Update the stocks array
+            const stockIndex = allStocks.findIndex(s => s.ticker === ticker);
+            if (stockIndex !== -1) {
+                allStocks[stockIndex] = data.stock;
+            }
+            
+            // Refresh display
+            applyFilters();
+            
+            // Close modal after 2 seconds
+            setTimeout(() => {
+                exitModal.style.display = 'none';
+                document.body.style.overflow = 'auto';
+            }, 2000);
+        } else {
+            showMessage(`✗ Error: ${data.error}`, 'error', 'exitMessage');
+        }
+    } catch (error) {
+        showMessage(`✗ Error: ${error.message}`, 'error', 'exitMessage');
+    }
+});
+
+// Global function to open exit modal
+window.openExitModal = function(ticker, currentPrice, entryPrice) {
+  const exitModal = document.getElementById('exitValueModal');
+  document.getElementById('exitStockTicker').value = ticker;
+  document.getElementById('exitCurrentPrice').value = currentPrice;
+  document.getElementById('exitEntryPrice').value = entryPrice;
+  document.getElementById('exitPrice').value = '';
+  document.getElementById('exitNotes').value = '';
+  document.getElementById('exitMessage').textContent = '';
+  document.getElementById('exitReturnPreview').textContent = 'Enter exit value to see return';
+  exitModal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  document.getElementById('exitPrice').focus();
+};
+
+// Inline exit value editing
+window.makeExitEditable = function(cell, ticker, entryPrice) {
+  // Prevent multiple edit instances
+  if (cell.querySelector('.exit-input')) return;
+  
+  const exitDisplay = cell.querySelector('.exit-display');
+  const currentValue = exitDisplay.textContent.replace('$', '').replace('(click to enter)', '').trim();
+  
+  // Replace display with input
+  const inputHTML = `
+    <input type="number" class="exit-input" value="${currentValue || ''}" 
+           placeholder="Enter exit price" step="0.01"
+           onblur="saveExitValue(this, '${ticker}', ${entryPrice})"
+           onkeypress="if(event.key === 'Enter') saveExitValue(this, '${ticker}', ${entryPrice})">
+  `;
+  
+  exitDisplay.style.display = 'none';
+  cell.insertAdjacentHTML('beforeend', inputHTML);
+  
+  // Focus and select input
+  const input = cell.querySelector('.exit-input');
+  input.focus();
+  input.select();
+};
+
+// Save exit value and update stock
+window.saveExitValue = async function(inputElement, ticker, entryPrice) {
+  const exitPrice = parseFloat(inputElement.value);
+  const exitCell = inputElement.closest('.editable-exit');
+  const exitDisplay = exitCell.querySelector('.exit-display');
+  
+  try {
+    if (!exitPrice || exitPrice <= 0) {
+      // Empty or invalid - just revert
+      exitDisplay.style.display = '';
+      inputElement.remove();
+      return;
+    }
+    
+    // Calculate return
+    let returnPercent = '';
+    if (entryPrice > 0) {
+      returnPercent = (((exitPrice - entryPrice) / entryPrice) * 100).toFixed(2);
+    }
+    
+    // Call API to update exit
+    const response = await fetch('/api/update-exit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        ticker, 
+        exitValue: exitPrice, 
+        exitNotes: '' 
+      })
+    });
+    
+    const data = await response.json();
+    
+    if (response.ok) {
+      // Update the display
+      exitDisplay.textContent = '$' + formatNumber(exitPrice);
+      exitDisplay.style.display = '';
+      inputElement.remove();
+      
+      // Refresh the table to show updated status/return
+      applyFilters();
+      
+      showMessage(`✓ Exit recorded at $${exitPrice.toFixed(2)} (Return: ${returnPercent}%)`, 'success', 'uploadMessage');
+    } else {
+      exitDisplay.style.display = '';
+      inputElement.remove();
+      showMessage(`✗ Error: ${data.error}`, 'error', 'uploadMessage');
+    }
+  } catch (error) {
+    exitDisplay.style.display = '';
+    inputElement.remove();
+    showMessage(`✗ Error saving exit value`, 'error', 'uploadMessage');
+  }
+}
+
 // Handle filtering and search
 document.getElementById('typeFilter').addEventListener('change', applyFilters);
 document.getElementById('statusFilter').addEventListener('change', applyFilters);
 document.getElementById('dateFilter').addEventListener('change', applyFilters);
+document.getElementById('userFilter').addEventListener('change', applyFilters);
 document.getElementById('searchInput').addEventListener('input', applyFilters);
 
 // Auto-fetch stock price when ticker is entered
 document.getElementById('stockTicker').addEventListener('blur', fetchStockPrice);
 
 async function fetchStockPrice() {
-  const ticker = document.getElementById('stockTicker').value.trim();
+  const ticker = document.getElementById('stockTicker').value.trim().toUpperCase();
   const priceInput = document.getElementById('stockCurrentPrice');
 
   if (!ticker) return;
@@ -240,24 +434,46 @@ async function fetchStockPrice() {
   priceInput.placeholder = 'Fetching...';
 
   try {
+    // Check cache first
+    if (priceCache.has(ticker)) {
+      const cached = priceCache.get(ticker);
+      priceInput.value = cached.price;
+      priceInput.style.opacity = '1';
+      priceInput.style.borderColor = '#4CAF50';
+      setTimeout(() => { priceInput.style.borderColor = ''; }, 2000);
+      showMessage(`✓ Found: ${ticker} - $${cached.price} (from cache)`, 'success', 'addStockMessage');
+      return;
+    }
+    
+    // Try to fetch fresh price
     const response = await fetch(`/api/stock-price/${ticker}`, { timeout: 8000 });
     const data = await response.json();
 
     if (response.ok && data.price) {
+      // Cache the price
+      priceCache.set(ticker, {
+        price: data.price,
+        timestamp: new Date().toISOString()
+      });
+      savePriceCache();
+      
       priceInput.value = data.price;
       priceInput.style.opacity = '1';
       priceInput.style.borderColor = '#4CAF50';
       setTimeout(() => { priceInput.style.borderColor = ''; }, 2000);
       showMessage(`✓ Found: ${data.name} - $${data.price}`, 'success', 'addStockMessage');
     } else {
+      // API error - check if we have any cached data for this ticker from other sources
       priceInput.style.opacity = '1';
       priceInput.placeholder = 'Enter price manually';
-      showMessage(`⚠ Could not auto-fetch. Enter price manually.`, 'warning', 'addStockMessage');
+      showMessage('⚠ Price fetch unavailable - please enter manually', 'warning', 'addStockMessage');
     }
   } catch (error) {
+    // Network error - show friendly message
     priceInput.style.opacity = '1';
     priceInput.placeholder = 'Enter price manually';
-    console.log('Stock price auto-fetch unavailable - enter manually');
+    showMessage('⚠ Could not fetch price - please enter manually', 'warning', 'addStockMessage');
+    console.log('Price fetch unavailable (optional - enter manually)');
   }
 }
 
@@ -265,10 +481,158 @@ async function loadStocks() {
     try {
         const response = await fetch('/api/stocks');
         allStocks = await response.json();
+        
+        // Pre-populate price cache from saved data
+        loadPriceCache();
+        allStocks.forEach(stock => {
+            if (stock.currentPrice && !priceCache.has(stock.ticker)) {
+                priceCache.set(stock.ticker, {
+                    price: parseFloat(stock.currentPrice),
+                    timestamp: new Date().toISOString()
+                });
+            }
+        });
+        savePriceCache();
+        
+        populateUserFilter();
         applyFilters();
+        
+        // Auto-fetch current prices for all stocks in background (only for major US stocks)
+        fetchAllStockPrices();
     } catch (error) {
         console.error('Error loading stocks:', error);
         showMessage('Error loading stocks', 'error', 'uploadMessage');
+    }
+}
+
+// Populate user filter with unique users from stocks
+function populateUserFilter() {
+    const userFilter = document.getElementById('userFilter');
+    const users = [...new Set(allStocks.map(stock => stock.suggestedBy).filter(Boolean))];
+    users.sort();
+    
+    // Keep "All Users" option and add user options
+    const currentValue = userFilter.value;
+    userFilter.innerHTML = '<option value="">All Users</option>';
+    
+    users.forEach(user => {
+        const option = document.createElement('option');
+        option.value = user;
+        option.textContent = user;
+        userFilter.appendChild(option);
+    });
+    
+    // Restore previous selection if it still exists
+    if (users.includes(currentValue)) {
+        userFilter.value = currentValue;
+    }
+}
+
+// Price cache with 24-hour expiration
+const priceCache = new Map();
+
+// Load cache from localStorage
+function loadPriceCache() {
+    try {
+        const cached = localStorage.getItem('priceCache');
+        if (cached) {
+            const data = JSON.parse(cached);
+            Object.entries(data).forEach(([ticker, item]) => {
+                if (new Date() - new Date(item.timestamp) < 24 * 60 * 60 * 1000) {
+                    priceCache.set(ticker, item);
+                }
+            });
+        }
+    } catch (e) {
+        console.log('Could not load price cache');
+    }
+}
+
+// Save cache to localStorage
+function savePriceCache() {
+    try {
+        const cacheData = {};
+        priceCache.forEach((value, key) => {
+            cacheData[key] = value;
+        });
+        localStorage.setItem('priceCache', JSON.stringify(cacheData));
+    } catch (e) {
+        console.log('Could not save price cache');
+    }
+}
+
+// Fetch current prices for all stocks and update display in real-time
+async function fetchAllStockPrices() {
+    loadPriceCache();
+    
+    // Alpha Vantage free tier: 25 requests per DAY - be very conservative
+    // Only fetch prices for major US stocks that we haven't cached yet
+    const usStocks = ['AAPL', 'MSFT', 'TSLA', 'GOOGL', 'META', 'AMZN', 'NVDA', 'AMD'];
+    let fetchCount = 0;
+    
+    for (const ticker of usStocks) {
+        // Check if we already have a cached price
+        if (priceCache.has(ticker)) {
+            const cached = priceCache.get(ticker);
+            if (new Date() - new Date(cached.timestamp) < 24 * 60 * 60 * 1000) {
+                // Use cached price if still valid (less than 24 hours old)
+                const stock = allStocks.find(s => s.ticker === ticker);
+                if (stock) {
+                    stock.currentPrice = cached.price;
+                    updatePriceInTable(ticker, cached.price);
+                }
+                continue;
+            }
+        }
+        
+        // Only fetch max 3 stocks per session to stay under daily limit
+        if (fetchCount >= 3) break;
+        
+        try {
+            const response = await fetch(`/api/stock-price/${ticker}`);
+            const data = await response.json();
+            
+            if (response.ok && data.price) {
+                // Cache the price
+                priceCache.set(ticker, {
+                    price: data.price,
+                    timestamp: new Date().toISOString()
+                });
+                savePriceCache();
+                
+                // Find and update the stock in allStocks
+                const index = allStocks.findIndex(s => s.ticker === ticker);
+                if (index !== -1) {
+                    allStocks[index].currentPrice = data.price;
+                    updatePriceInTable(ticker, data.price);
+                }
+                
+                fetchCount++;
+            }
+        } catch (error) {
+            console.log(`Could not fetch price for ${ticker}`);
+        }
+        
+        // Only 1 request per 30 seconds to avoid rate limits
+        await new Promise(resolve => setTimeout(resolve, 30000));
+    }
+    
+    // Don't schedule another fetch - use cached prices for the day
+}
+
+// Update a specific stock price in the table
+function updatePriceInTable(ticker, price) {
+    const row = document.querySelector(`tr[data-ticker="${ticker}"]`);
+    if (row) {
+        const priceCell = row.querySelector('.price-cell-current');
+        if (priceCell) {
+            priceCell.textContent = '$' + formatNumber(price);
+            // Flash animation to show update
+            priceCell.style.backgroundColor = '#fff3cd';
+            setTimeout(() => {
+                priceCell.style.backgroundColor = '';
+            }, 1000);
+        }
     }
 }
 
@@ -277,6 +641,7 @@ function applyFilters() {
     const statusFilter = document.getElementById('statusFilter').value;
     const searchTerm = document.getElementById('searchInput').value.toLowerCase();
     const dateFilter = document.getElementById('dateFilter').value;
+    const userFilter = document.getElementById('userFilter').value;
 
     let filtered = allStocks;
 
@@ -305,6 +670,10 @@ function applyFilters() {
             const stockDate = new Date(stock.addedDate);
             return stockDate >= filterDate;
         });
+    }
+
+    if (userFilter) {
+        filtered = filtered.filter(stock => stock.suggestedBy === userFilter);
     }
 
     // Sort the filtered results
@@ -372,7 +741,7 @@ function displayStocks(stocks) {
     const countSpan = document.getElementById('stockCount');
     
     if (!stocks || stocks.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="10" class="empty">No recommendations found.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="12" class="empty">No recommendations found.</td></tr>';
         countSpan.textContent = '';
         return;
     }
@@ -384,8 +753,26 @@ function displayStocks(stocks) {
         const returnVal = stock.returnPercent ? parseFloat(stock.returnPercent) : 0;
         const returnClass = returnVal > 0 ? 'positive' : returnVal < 0 ? 'negative' : '';
         
+        // Make exit value editable for open stocks
+        let exitValueCell = '';
+        if (isOpen) {
+            exitValueCell = `
+                <td class="price-cell exit-cell editable-exit" onclick="makeExitEditable(this, '${stock.ticker}', '${stock.entry || 0}')">
+                    <span class="exit-display">${stock.exitValue ? '$' + formatNumber(stock.exitValue) : '<em>(click to enter)</em>'}</span>
+                    <input type="hidden" class="exit-ticker" value="${stock.ticker}">
+                    <input type="hidden" class="exit-entry" value="${stock.entry || 0}">
+                </td>
+            `;
+        } else {
+            exitValueCell = `
+                <td class="price-cell exit-cell">
+                    ${stock.exitValue ? '$' + formatNumber(stock.exitValue) : '-'}
+                </td>
+            `;
+        }
+        
         return `
-            <tr class="stock-row ${isOpen ? 'open' : 'closed'}">
+            <tr class="stock-row ${isOpen ? 'open' : 'closed'}" data-ticker="${stock.ticker}">
                 <td class="date-cell">${formatDate(stock.addedDate || stock.alertDate)}</td>
                 <td class="ticker-cell"><strong>${escapeHtml(stock.ticker)}</strong></td>
                 <td class="type-cell">${escapeHtml(stock.type || '-')}</td>
@@ -394,17 +781,26 @@ function displayStocks(stocks) {
                         ${escapeHtml(stock.status || '-')}
                     </span>
                 </td>
-                <td class="price-cell">${stock.currentPrice ? '$' + formatNumber(stock.currentPrice) : '-'}</td>
+                <td class="price-cell price-cell-current" data-ticker="${stock.ticker}">${stock.currentPrice ? '$' + formatNumber(stock.currentPrice) : '-'}</td>
                 <td class="price-cell">${stock.entry ? '$' + formatNumber(stock.entry) : '-'}</td>
                 <td class="price-cell">${stock.priceTarget ? '$' + formatNumber(stock.priceTarget) : '-'}</td>
+                ${exitValueCell}
                 <td class="return-cell ${returnClass}" title="Return percentage">${stock.returnPercent ? formatNumber(stock.returnPercent) + '%' : '-'}</td>
                 <td class="name-cell">${escapeHtml(stock.suggestedBy || '-')}</td>
                 <td class="notes-cell" title="${escapeHtml(stock.exitNotes || '')}">
                     ${stock.exitNotes ? escapeHtml(stock.exitNotes.substring(0, 40)) + (stock.exitNotes.length > 40 ? '...' : '') : '-'}
                 </td>
+                <td class="action-cell">
+                    ${isOpen ? `<button class="btn-record-exit" onclick="openExitModal('${stock.ticker}', '${stock.currentPrice || 0}', '${stock.entry || 0}')">Save ✓</button>` : '-'}
+                </td>
             </tr>
         `;
     }).join('');
+    
+    // After rendering, set up exit value editing functionality
+    document.querySelectorAll('.editable-exit').forEach(cell => {
+        // Cell is already set up to call makeExitEditable on click
+    });
 }
 
 function formatNumber(value) {
