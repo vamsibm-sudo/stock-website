@@ -128,6 +128,41 @@ function setupModalHandlers() {
       `;
     }
   });
+
+  // Edit Stock Modal handlers
+  const editModal = document.getElementById('editStockModal');
+  const closeEditBtn = document.getElementById('closeEditModalBtn');
+  const cancelEditBtn = document.getElementById('cancelEditBtn');
+
+  const closeEditModal = () => {
+    editModal.style.display = 'none';
+    document.body.style.overflow = 'auto';
+    document.getElementById('editStockForm').reset();
+    document.getElementById('editMessage').textContent = '';
+  };
+
+  closeEditBtn.addEventListener('click', closeEditModal);
+  cancelEditBtn.addEventListener('click', closeEditModal);
+
+  // Close edit modal on ESC
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && editModal.style.display === 'flex') {
+      closeEditModal();
+    }
+  });
+
+  // Close on outside click
+  editModal.addEventListener('click', (e) => {
+    if (e.target === editModal) {
+      closeEditModal();
+    }
+  });
+
+  // Edit form submission
+  document.getElementById('editStockForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await saveStockEdit();
+  });
 }
 
 function setupSortingHandlers() {
@@ -791,7 +826,9 @@ function displayStocks(stocks) {
                     ${stock.exitNotes ? escapeHtml(stock.exitNotes.substring(0, 40)) + (stock.exitNotes.length > 40 ? '...' : '') : '-'}
                 </td>
                 <td class="action-cell">
-                    ${isOpen ? `<button class="btn-record-exit" onclick="openExitModal('${stock.ticker}', '${stock.currentPrice || 0}', '${stock.entry || 0}')">Save ✓</button>` : '-'}
+                    <button class="btn-edit" onclick="openEditModal('${stock.ticker}')">✏️ Edit</button>
+                    <button class="btn-delete" onclick="deleteStock('${stock.ticker}')">🗑️ Delete</button>
+                    ${isOpen ? `<button class="btn-record-exit" onclick="openExitModal('${stock.ticker}', '${stock.currentPrice || 0}', '${stock.entry || 0}')">Save ✓</button>` : ''}
                 </td>
             </tr>
         `;
@@ -837,4 +874,103 @@ function escapeHtml(text) {
         "'": '&#039;'
     };
     return text.replace(/[&<>"']/g, m => map[m]);
+}
+
+// Edit Stock Functions
+function openEditModal(ticker) {
+    const stock = allStocks.find(s => s.ticker === ticker);
+    if (!stock) {
+        showMessage('Stock not found', 'error', 'editMessage');
+        return;
+    }
+
+    // Populate form with stock data
+    document.getElementById('editStockTicker').value = stock.ticker;
+    document.getElementById('editStockType').value = stock.type || '';
+    document.getElementById('editStockStatus').value = stock.status || '';
+    document.getElementById('editStockCurrentPrice').value = stock.currentPrice || '';
+    document.getElementById('editStockEntry').value = stock.entry || '';
+    document.getElementById('editStockTarget').value = stock.priceTarget || '';
+    document.getElementById('editStockNotes').value = stock.exitNotes || '';
+
+    // Open modal
+    const editModal = document.getElementById('editStockModal');
+    editModal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    document.getElementById('editStockType').focus();
+}
+
+async function saveStockEdit() {
+    const ticker = document.getElementById('editStockTicker').value;
+    const updatedStock = {
+        ticker: ticker,
+        type: document.getElementById('editStockType').value,
+        status: document.getElementById('editStockStatus').value,
+        currentPrice: document.getElementById('editStockCurrentPrice').value || '',
+        entry: document.getElementById('editStockEntry').value || '',
+        priceTarget: document.getElementById('editStockTarget').value || '',
+        exitNotes: document.getElementById('editStockNotes').value || ''
+    };
+
+    try {
+        const response = await fetch('/api/edit-stock', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(updatedStock)
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            // Update in local array
+            const stockIndex = allStocks.findIndex(s => s.ticker === ticker);
+            if (stockIndex !== -1) {
+                allStocks[stockIndex] = { ...allStocks[stockIndex], ...updatedStock };
+            }
+            
+            showMessage('✓ Stock updated successfully!', 'success', 'editMessage');
+            applyFilters();
+            
+            setTimeout(() => {
+                document.getElementById('editStockModal').style.display = 'none';
+                document.body.style.overflow = 'auto';
+            }, 1500);
+        } else {
+            showMessage(`✗ Error: ${data.error}`, 'error', 'editMessage');
+        }
+    } catch (error) {
+        showMessage(`✗ Error: ${error.message}`, 'error', 'editMessage');
+    }
+}
+
+async function deleteStock(ticker) {
+    if (!confirm(`Are you sure you want to delete ${ticker}? This action cannot be undone.`)) {
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/delete-stock', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ ticker })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            // Remove from local array
+            allStocks = allStocks.filter(s => s.ticker !== ticker);
+            populateUserFilter();
+            applyFilters();
+            showMessage('✓ Stock deleted successfully!', 'success', 'uploadMessage');
+        } else {
+            showMessage(`✗ Error: ${data.error}`, 'error', 'uploadMessage');
+        }
+    } catch (error) {
+        showMessage(`✗ Error: ${error.message}`, 'error', 'uploadMessage');
+    }
 }
