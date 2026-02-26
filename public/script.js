@@ -950,6 +950,16 @@ async function deleteStock(ticker) {
         return;
     }
 
+    const accessCode = prompt('Enter access code to confirm deletion:');
+    if (!accessCode) {
+        return;
+    }
+
+    if (accessCode !== '2275') {
+        showMessage('✗ Invalid access code. Deletion cancelled.', 'error', 'uploadMessage');
+        return;
+    }
+
     try {
         const response = await fetch('/api/delete-stock', {
             method: 'POST',
