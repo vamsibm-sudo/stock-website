@@ -4,6 +4,10 @@ const XLSX = require('xlsx');
 const fs = require('fs');
 const path = require('path');
 const https = require('https');
+const fetch = require('node-fetch');
+
+// Alpha Vantage API Key
+const ALPHA_VANTAGE_KEY = 'J899S26VIHFWYS80';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -180,47 +184,177 @@ app.post('/api/add-stock', (req, res) => {
   }
 });
 
+// Update stock exit value and close position
+app.post('/api/update-exit', (req, res) => {
+  try {
+    const { ticker, exitValue, exitNotes } = req.body;
+
+    if (!ticker || !exitValue) {
+      return res.status(400).json({ error: 'Ticker and exit value are required' });
+    }
+
+    // Read existing stocks
+    const stocks = JSON.parse(fs.readFileSync(STOCKS_FILE, 'utf8'));
+    
+    // Find the stock
+    const stockIndex = stocks.findIndex(s => s.ticker.toUpperCase() === ticker.toUpperCase());
+    
+    if (stockIndex === -1) {
+      return res.status(404).json({ error: 'Stock not found' });
+    }
+
+    const stock = stocks[stockIndex];
+    const entryPrice = parseFloat(stock.entry) || 0;
+    const exitVal = parseFloat(exitValue);
+
+    // Calculate return percentage
+    let returnPercent = '';
+    if (entryPrice > 0) {
+      returnPercent = (((exitVal - entryPrice) / entryPrice) * 100).toFixed(2);
+    }
+
+    // Update stock
+    stock.exitValue = exitVal;
+    stock.exitNotes = exitNotes || '';
+    stock.returnPercent = returnPercent;
+    stock.status = 'Closed';
+    stock.exitedDate = new Date().toISOString();
+
+    // Save to file
+    fs.writeFileSync(STOCKS_FILE, JSON.stringify(stocks, null, 2));
+
+    res.json({ 
+      success: true, 
+      message: 'Stock exit recorded successfully',
+      stock: stock,
+      returnPercent: returnPercent
+    });
+  } catch (error) {
+    console.error('Update exit error:', error);
+    res.status(500).json({ error: 'Error updating exit: ' + error.message });
+  }
+});
+
+// Edit stock endpoint
+app.post('/api/edit-stock', (req, res) => {
+  try {
+    const { ticker, type, status, currentPrice, entry, priceTarget, exitNotes } = req.body;
+
+    if (!ticker) {
+      return res.status(400).json({ error: 'Ticker is required' });
+    }
+
+    // Read existing stocks
+    const stocks = JSON.parse(fs.readFileSync(STOCKS_FILE, 'utf8'));
+    
+    // Find the stock
+    const stockIndex = stocks.findIndex(s => s.ticker.toUpperCase() === ticker.toUpperCase());
+    
+    if (stockIndex === -1) {
+      return res.status(404).json({ error: 'Stock not found' });
+    }
+
+    const stock = stocks[stockIndex];
+    
+    // Update fields if provided
+    if (type) stock.type = type;
+    if (status) stock.status = status;
+    if (currentPrice) stock.currentPrice = currentPrice;
+    if (entry) stock.entry = entry;
+    if (priceTarget) stock.priceTarget = priceTarget;
+    if (exitNotes !== undefined) stock.exitNotes = exitNotes;
+
+    // Save to file
+    fs.writeFileSync(STOCKS_FILE, JSON.stringify(stocks, null, 2));
+
+    res.json({
+      success: true,
+      message: 'Stock updated successfully',
+      stock: stock
+    });
+  } catch (error) {
+    console.error('Edit stock error:', error);
+    res.status(500).json({ error: 'Error updating stock: ' + error.message });
+  }
+});
+
+// Delete stock endpoint
+app.post('/api/delete-stock', (req, res) => {
+  try {
+    const { ticker } = req.body;
+
+    if (!ticker) {
+      return res.status(400).json({ error: 'Ticker is required' });
+    }
+
+    // Read existing stocks
+    const stocks = JSON.parse(fs.readFileSync(STOCKS_FILE, 'utf8'));
+    
+    // Find and remove the stock
+    const stockIndex = stocks.findIndex(s => s.ticker.toUpperCase() === ticker.toUpperCase());
+    
+    if (stockIndex === -1) {
+      return res.status(404).json({ error: 'Stock not found' });
+    }
+
+    stocks.splice(stockIndex, 1);
+
+    // Save to file
+    fs.writeFileSync(STOCKS_FILE, JSON.stringify(stocks, null, 2));
+
+    res.json({
+      success: true,
+      message: 'Stock deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete stock error:', error);
+    res.status(500).json({ error: 'Error deleting stock: ' + error.message });
+  }
+});
+
 // Helper function to fetch stock price from Yahoo Finance
-function fetchStockPriceFromYahoo(ticker) {
-  return new Promise((resolve, reject) => {
-    const options = {
-      hostname: 'query1.finance.yahoo.com',
-      path: `/v10/finance/quoteSummary/${ticker}?modules=price`,
+// Helper function to fetch stock price from Alpha Vantage
+async function fetchStockPriceFromAlphaVantage(ticker) {
+  try {
+    const url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${ticker}&apikey=${ALPHA_VANTAGE_KEY}`;
+    
+    const response = await fetch(url, {
       method: 'GET',
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-      }
-    };
-
-    const request = https.request(options, (response) => {
-      let data = '';
-      response.on('data', chunk => data += chunk);
-      response.on('end', () => {
-        try {
-          const json = JSON.parse(data);
-          if (json.quoteSummary && json.quoteSummary.result && json.quoteSummary.result[0]) {
-            const price = json.quoteSummary.result[0].price;
-            resolve({
-              price: price.regularMarketPrice.raw,
-              currency: price.currency || 'USD',
-              name: price.shortName || ticker
-            });
-          } else {
-            reject(new Error('No price data found'));
-          }
-        } catch (e) {
-          reject(e);
-        }
-      });
+      },
+      timeout: 10000
     });
 
-    request.on('error', reject);
-    request.setTimeout(5000);
-    request.end();
-  });
+    if (!response.ok) {
+      throw new Error(`API returned ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    // Check for API error or invalid response
+    if (data.Note || data['Error Message']) {
+      throw new Error(data.Note || data['Error Message']);
+    }
+
+    if (data['Global Quote'] && data['Global Quote']['05. price']) {
+      const quote = data['Global Quote'];
+      return {
+        price: parseFloat(quote['05. price']),
+        currency: 'USD',
+        name: ticker,
+        timestamp: new Date().toISOString()
+      };
+    }
+
+    throw new Error('No quote data in response');
+  } catch (error) {
+    console.log(`Alpha Vantage price fetch failed for ${ticker}: ${error.message}`);
+    throw error;
+  }
 }
 
-// Get stock price from Yahoo Finance
+// Get stock price from Alpha Vantage
 app.get('/api/stock-price/:ticker', async (req, res) => {
   try {
     const ticker = String(req.params.ticker).trim().toUpperCase();
@@ -229,13 +363,13 @@ app.get('/api/stock-price/:ticker', async (req, res) => {
       return res.status(400).json({ error: 'Ticker is required' });
     }
 
-    const priceData = await fetchStockPriceFromYahoo(ticker);
+    const priceData = await fetchStockPriceFromAlphaVantage(ticker);
     res.json({
       ticker: ticker,
       price: priceData.price,
       currency: priceData.currency,
       name: priceData.name,
-      timestamp: new Date().toISOString()
+      timestamp: priceData.timestamp
     });
   } catch (error) {
     console.error('Stock price fetch error for', req.params.ticker, ':', error.message);
