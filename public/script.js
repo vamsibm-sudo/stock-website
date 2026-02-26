@@ -826,9 +826,9 @@ function displayStocks(stocks) {
                     ${stock.exitNotes ? escapeHtml(stock.exitNotes.substring(0, 40)) + (stock.exitNotes.length > 40 ? '...' : '') : '-'}
                 </td>
                 <td class="action-cell">
-                    <button class="btn-edit" onclick="openEditModal('${stock.ticker}')">✏️ Edit</button>
-                    <button class="btn-delete" onclick="deleteStock('${stock.ticker}')">🗑️ Delete</button>
-                    ${isOpen ? `<button class="btn-record-exit" onclick="openExitModal('${stock.ticker}', '${stock.currentPrice || 0}', '${stock.entry || 0}')">Save ✓</button>` : ''}
+                    <button class="btn-edit" onclick="openEditModal('${stock.ticker}')" title="Edit">✏️</button>
+                    <button class="btn-delete" onclick="deleteStock('${stock.ticker}')" title="Delete">🗑️</button>
+                    ${isOpen ? `<button class="btn-record-exit" onclick="openExitModal('${stock.ticker}', '${stock.currentPrice || 0}', '${stock.entry || 0}')" title="Record Exit">✓</button>` : ''}
                 </td>
             </tr>
         `;

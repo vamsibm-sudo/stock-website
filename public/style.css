@@ -330,7 +330,7 @@ input[type="file"]:hover {
     width: 100%;
     border-collapse: collapse;
     background: white;
-    font-size: 0.95em;
+    font-size: 0.8em;
 }
 
 .stocks-table thead {
@@ -339,7 +339,7 @@ input[type="file"]:hover {
 
 .stocks-table th {
     color: white;
-    padding: 16px 12px;
+    padding: 10px 6px;
     text-align: left;
     font-weight: 600;
     border-bottom: none;
@@ -384,37 +384,38 @@ input[type="file"]:hover {
 }
 
 .stocks-table td {
-    padding: 14px 12px;
+    padding: 8px 4px;
     color: #333;
 }
 
 .date-cell {
     color: #667eea;
     font-weight: 600;
-    min-width: 90px;
+    min-width: 65px;
+    font-size: 0.75em;
 }
 
 .ticker-cell {
     color: #667eea;
     font-weight: 700;
-    font-size: 1.05em;
-    min-width: 80px;
+    font-size: 0.9em;
+    min-width: 55px;
 }
 
 .type-cell {
     font-weight: 500;
-    min-width: 70px;
+    min-width: 45px;
 }
 
 .status-cell {
-    min-width: 90px;
+    min-width: 65px;
 }
 
 .status-badge {
     display: inline-block;
-    padding: 4px 10px;
-    border-radius: 12px;
-    font-size: 0.85em;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-size: 0.75em;
     font-weight: 600;
 }
 
@@ -430,14 +431,16 @@ input[type="file"]:hover {
 
 .price-cell {
     text-align: right;
-    min-width: 100px;
+    min-width: 70px;
     font-weight: 500;
+    font-size: 0.85em;
 }
 
 .return-cell {
     text-align: right;
     font-weight: 600;
-    min-width: 90px;
+    min-width: 60px;
+    font-size: 0.85em;
 }
 
 .return-cell.positive {
@@ -449,22 +452,28 @@ input[type="file"]:hover {
 }
 
 .name-cell {
-    max-width: 120px;
+    max-width: 90px;
     word-break: break-word;
     color: #666;
+    font-size: 0.75em;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .notes-cell {
-    max-width: 150px;
+    max-width: 80px;
     word-break: break-word;
     color: #999;
-    font-size: 0.9em;
+    font-size: 0.75em;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .exit-cell {
-    min-width: 80px;
+    min-width: 60px;
     text-align: center;
     font-weight: 500;
+    font-size: 0.85em;
 }
 
 .editable-exit {
@@ -501,20 +510,23 @@ input[type="file"]:hover {
 }
 
 .action-cell {
-    min-width: 100px;
+    min-width: 75px;
     text-align: center;
+    white-space: nowrap;
 }
 
 .btn-record-exit {
-    padding: 6px 12px;
+    padding: 4px 8px;
     background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
     color: white;
     border: none;
     border-radius: 4px;
     cursor: pointer;
     font-weight: 600;
-    font-size: 0.85em;
+    font-size: 0.7em;
     transition: all 0.2s;
+    display: inline-block;
+    margin: 0 2px;
 }
 
 .btn-record-exit:hover {
@@ -527,17 +539,18 @@ input[type="file"]:hover {
 }
 
 .btn-edit {
-    padding: 6px 12px;
+    padding: 4px 8px;
     background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
     color: white;
     border: none;
     border-radius: 4px;
     cursor: pointer;
     font-weight: 600;
-    font-size: 0.85em;
+    font-size: 0.7em;
     transition: all 0.2s;
-    margin-right: 4px;
-}
+    display: inline-block;
+    margin: 0 2px;
+}}
 
 .btn-edit:hover {
     transform: translateY(-2px);
@@ -549,16 +562,17 @@ input[type="file"]:hover {
 }
 
 .btn-delete {
-    padding: 6px 12px;
+    padding: 4px 8px;
     background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
     color: white;
     border: none;
     border-radius: 4px;
     cursor: pointer;
     font-weight: 600;
-    font-size: 0.85em;
+    font-size: 0.7em;
     transition: all 0.2s;
-    margin-right: 4px;
+    display: inline-block;
+    margin: 0 2px;
 }
 
 .btn-delete:hover {
