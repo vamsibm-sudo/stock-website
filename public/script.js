@@ -355,6 +355,16 @@ document.getElementById('exitValueForm').addEventListener('submit', async (e) =>
 
 // Global function to open exit modal
 window.openExitModal = function(ticker, currentPrice, entryPrice) {
+  const accessCode = prompt('Enter access code to record exit:');
+  if (!accessCode) {
+    return;
+  }
+
+  if (accessCode !== '2275') {
+    showMessage('✗ Invalid access code. Exit record cancelled.', 'error', 'uploadMessage');
+    return;
+  }
+
   const exitModal = document.getElementById('exitValueModal');
   document.getElementById('exitStockTicker').value = ticker;
   document.getElementById('exitCurrentPrice').value = currentPrice;
@@ -878,6 +888,16 @@ function escapeHtml(text) {
 
 // Edit Stock Functions
 function openEditModal(ticker) {
+    const accessCode = prompt('Enter access code to edit stock:');
+    if (!accessCode) {
+        return;
+    }
+
+    if (accessCode !== '2275') {
+        showMessage('✗ Invalid access code. Edit cancelled.', 'error', 'uploadMessage');
+        return;
+    }
+
     const stock = allStocks.find(s => s.ticker === ticker);
     if (!stock) {
         showMessage('Stock not found', 'error', 'editMessage');
